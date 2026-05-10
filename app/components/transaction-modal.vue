@@ -53,7 +53,7 @@
         </p>
 
         <UFormField label="Amount" name="amount" :required="true" class="mb-4">
-          <UInput v-model.number="state.amount" type="number" placeholder="Amount" class="w-full" />
+          <AmountCalculatorInput v-model="state.amount" placeholder="Amount" input-class="w-full" />
         </UFormField>
 
         <UFormField
@@ -84,7 +84,7 @@
           <USelectMenu
             placeholder="Select Category"
             v-model="state.category"
-            :items="categories"
+            :items="filteredCategories"
             class="w-full"
           />
         </UFormField>
@@ -156,6 +156,12 @@ const creditLineMenuItems = computed(() => {
   return creditCardLineOptions;
 });
 const typeMenuItems = types;
+const filteredCategories = computed(() => {
+  if (props.creditCard) {
+    return categories.filter((category) => category !== "Credit card");
+  }
+  return categories;
+});
 
 const showCategoryField = computed(() => {
   if (creditCard.value) {
@@ -198,7 +204,7 @@ const creditLineKindAll = z
     category: z.string().optional(),
   })
   .superRefine((d, ctx) => {
-    if (d.creditLineKind === "spend" && !categories.includes(d.category)) {
+    if (d.creditLineKind === "spend" && !filteredCategories.value.includes(d.category)) {
       ctx.addIssue({ code: "custom", path: ["category"], message: "Select a category" });
     }
   });
@@ -214,7 +220,7 @@ const creditLineFormSchemaOwnerAdd = z
     category: z.string().optional(),
   })
   .superRefine((d, ctx) => {
-    if (d.creditLineKind === "spend" && !categories.includes(d.category)) {
+    if (d.creditLineKind === "spend" && !filteredCategories.value.includes(d.category)) {
       ctx.addIssue({ code: "custom", path: ["category"], message: "Select a category" });
     }
   });
