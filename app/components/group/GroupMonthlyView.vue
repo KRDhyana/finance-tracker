@@ -82,6 +82,7 @@
         <TransactionModal
           v-model:isOpen="isAddOpen"
           :group-id="groupId"
+          :group-members="members"
           @saved="refreshData"
         />
         <UButton

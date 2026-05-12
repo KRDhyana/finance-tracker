@@ -84,6 +84,7 @@
       <div>
         <TransactionModal
           :group-id="groupId"
+          :group-members="members"
           @saved="refreshData"
           v-model:isOpen="isOpen"
         />

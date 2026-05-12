@@ -10,11 +10,21 @@ function typeLower(t) {
 export function isCcSpend(t) {
   if (!t) return false;
   const sub = t.subtype;
+  const subLower = String(sub ?? "").trim().toLowerCase();
   const subEmpty = sub == null || String(sub).trim() === "";
-  if (typeLower(t) === "expense" && subEmpty) {
+  if (typeLower(t) === "expense" && (subEmpty || subLower === "split")) {
     return true;
   }
-  return t.type === "Expense" && (sub == null || String(sub).trim() === "");
+  return t.type === "Expense" && (sub == null || String(sub).trim() === "" || subLower === "split");
+}
+
+export function isCcSplitSpend(t) {
+  if (!t) return false;
+  if (typeLower(t) !== "expense") return false;
+  const sub = String(t.subtype ?? "").trim().toLowerCase();
+  if (sub === "split") return true;
+  const desc = String(t.description ?? "").trim().toLowerCase();
+  return desc === "[split]" || desc.startsWith("[split] ");
 }
 
 export function isCcReserve(t) {

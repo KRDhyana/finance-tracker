@@ -25,11 +25,14 @@
           :name="icon"
           :class="[iconColor, 'mt-0.5 size-5 shrink-0 sm:mt-0']"
         />
-        <div class="min-w-0 flex-1 break-words leading-snug">
-          {{ transaction.description }}
+        <div class="min-w-0 flex-1 wrap-break-word leading-snug">
+          {{ displayDescription }}
         </div>
       </div>
       <div class="flex flex-wrap gap-2 sm:shrink-0 sm:justify-end">
+        <UBadge color="warning" variant="subtle" v-if="isSplitSpend">
+          Split
+        </UBadge>
         <UBadge
           v-if="creditLine && showReserveOrPayment"
           :color="ccReserve ? 'success' : 'info'"
@@ -91,7 +94,7 @@
 </template>
 
 <script setup>
-import { isCcReserve, isCcPaymentToOwner, isCcSpend } from "~/utils/creditCardTransaction";
+import { isCcReserve, isCcPaymentToOwner, isCcSpend, isCcSplitSpend } from "~/utils/creditCardTransaction";
 
 const props = defineProps({
   transaction: {
@@ -160,6 +163,12 @@ const ccReserve = computed(() => isCcReserve(props.transaction));
 const showReserveOrPayment = computed(
   () => ccReserve.value || isCcPaymentToOwner(props.transaction),
 );
+
+const isSplitSpend = computed(() => props.creditLine && isCcSplitSpend(props.transaction));
+const displayDescription = computed(() => {
+  const text = String(props.transaction?.description ?? "");
+  return text.replace(/^\[split\]\s*/i, "");
+});
 
 /** Card spend only — not reserve, not payment-to-owner; any member’s line in this list. */
 const showSpendPickCheckbox = computed(() => {
