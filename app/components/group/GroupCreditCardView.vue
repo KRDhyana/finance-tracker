@@ -79,20 +79,12 @@
             <span class="font-medium text-gray-900 dark:text-white mr-1">{{ filterPeriodLabel }}</span>
           </p>
         </div>
-        <div v-if="filteredList.length"
-          class="flex items-center justify-between gap-3 border-t border-gray-200 pt-3 dark:border-gray-800 sm:flex-row sm:flex-wrap sm:items-center">
+        <div
+          v-if="filteredList.length"
+          class="flex items-center gap-3 border-t border-gray-200 pt-3 dark:border-gray-800"
+        >
           <div v-if="memberFilterUserId === (user?.id || user?.sub)" class="max-w-md">
             <USwitch v-model="spendToReserveMode" :disabled="!canAddLine" label="Spends to reserves" />
-          </div>
-          <div v-else></div>
-          <div class="flex items-center gap-2">
-            <TransactionModal v-model:isOpen="isAddOpen" :group-id="groupId" :group-owner-user-id="ownerUserId"
-              :group-members="members"
-              :credit-card-id="selectedCardId" :billing-cycle-key="selectedCycleKey"
-              :card-billing-cycle-start-day="selectedCard?.billing_cycle_start_day"
-              :card-billing-cycle-end-day="selectedCard?.billing_cycle_end_day" credit-card @saved="refreshData" />
-            <UButton color="neutral" icon="i-heroicons-plus-circle-solid" variant="outline" label="Add"
-              :disabled="!canAddLine" @click="isAddOpen = true" />
           </div>
         </div>
         <UButton v-if="spendToReserveMode && selectedSpendCount > 0" color="primary" variant="solid"
@@ -100,6 +92,15 @@
           @click="openBulkReserveModal">
           {{ bulkReserveButtonLabel }}
         </UButton>
+      </div>
+      <div class="flex items-center gap-2 shrink-0">
+        <TransactionModal v-model:isOpen="isAddOpen" :group-id="groupId" :group-owner-user-id="ownerUserId"
+          :group-members="members"
+          :credit-card-id="selectedCardId" :billing-cycle-key="selectedCycleKey"
+          :card-billing-cycle-start-day="selectedCard?.billing_cycle_start_day"
+          :card-billing-cycle-end-day="selectedCard?.billing_cycle_end_day" credit-card @saved="refreshData" />
+        <UButton color="neutral" icon="i-heroicons-plus-circle-solid" variant="outline" label="Add"
+          :disabled="!canAddLine" @click="isAddOpen = true" />
       </div>
     </section>
 
