@@ -1,6 +1,6 @@
 <template>
   <div>
-    <VitePwaManifest />
+    <VitePwaManifest v-if="!isNativeBuild" />
     <UApp>
     <NuxtLayout>
         <NuxtPage />
@@ -8,3 +8,8 @@
     </UApp>
   </div>
 </template>
+
+<script setup>
+const config = useRuntimeConfig();
+const isNativeBuild = computed(() => Boolean(config.public.isNativeBuild));
+</script>

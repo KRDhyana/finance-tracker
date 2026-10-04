@@ -13,11 +13,18 @@
     <section class="space-y-3">
       <div class="flex items-center justify-between">
       <h2 class="text-2xl font-bold">My groups</h2>
-      <UButton icon="i-heroicons-arrow-right-on-rectangle" label="Join group" color="neutral" variant="outline"
-        @click="joinGroupModalOpen = true" />
+      <div class="flex items-center gap-2">
+        <UButton icon="i-heroicons-arrow-path" color="neutral" variant="ghost" aria-label="Refresh"
+          :loading="isRefreshing" @click="refresh()" />
+        <UButton icon="i-heroicons-arrow-right-on-rectangle" label="Join group" color="neutral" variant="outline"
+          @click="joinGroupModalOpen = true" />
+      </div>
       </div>
       <div v-if="pendingGroups" class="grid gap-4">
         <USkeleton v-for="i in 3" :key="i" class="h-32 w-full" />
+      </div>
+      <div v-else-if="!memberships.length && groupsError" class="text-sm text-gray-500">
+        Couldn't load your groups.
       </div>
       <div v-else-if="!memberships.length" class="text-sm text-gray-500">
         No memberships yet.
@@ -59,17 +66,21 @@
               Invite token
             </p>
             <template v-if="group.token">
-              <p class="text-xs font-mono break-all text-gray-700 dark:text-gray-300">
+              <p v-if="isTokenRevealed(group.id)" class="text-xs font-mono break-all text-gray-700 dark:text-gray-300">
                 {{ group.token }}
               </p>
-              <p v-if="group.invite_expires_at" class="text-xs text-gray-500 mt-1">
+              <p v-if="isTokenRevealed(group.id) && group.invite_expires_at" class="text-xs text-gray-500 mt-1">
                 Expires {{ new Date(group.invite_expires_at).toLocaleString() }}
               </p>
               <div class="flex flex-wrap gap-2 mt-3">
-                <UButton size="xs" color="neutral" variant="outline" icon="i-heroicons-clipboard-document" label="Copy"
-                  @click="copyGroupToken(group.token)" />
-                <UButton v-if="canShare" size="xs" color="neutral" variant="outline" icon="i-heroicons-share"
-                  label="Share" @click="shareGroupInvite(group)" />
+                <UButton size="xs" color="neutral" variant="outline"
+                  :icon="isTokenRevealed(group.id) ? 'i-heroicons-eye-slash' : 'i-heroicons-eye'"
+                  :label="isTokenRevealed(group.id) ? 'Hide' : 'Show'"
+                  @click="toggleToken(group.id)" />
+                <UButton v-if="isTokenRevealed(group.id)" size="xs" color="neutral" variant="outline"
+                  icon="i-heroicons-clipboard-document" label="Copy" @click="copyGroupToken(group.token)" />
+                <UButton v-if="isTokenRevealed(group.id) && canShare" size="xs" color="neutral" variant="outline"
+                  icon="i-heroicons-share" label="Share" @click="shareGroupInvite(group)" />
               </div>
             </template>
             <p v-else class="text-xs text-gray-500">
@@ -139,17 +150,22 @@
             </div>
             <div>
               <dt class="text-gray-500 dark:text-gray-400">Invite token</dt>
-              <dd
+              <dd v-if="createdTokenVisible"
                 class="mt-1 break-all rounded-md bg-gray-50 p-2.5 font-mono text-xs text-gray-800 dark:bg-gray-800/80 dark:text-gray-200">
                 {{ groupCreated.token }}
               </dd>
+              <dd v-else class="mt-1 text-xs text-gray-500">Hidden</dd>
             </div>
           </dl>
           <div class="flex flex-wrap gap-2">
-            <UButton color="neutral" variant="outline" icon="i-heroicons-clipboard-document" label="Copy token"
-              @click="copyGroupToken(groupCreated.token)" />
-            <UButton v-if="canShare" color="neutral" variant="solid" icon="i-heroicons-share" label="Share"
-              @click="shareGroupInvite({ name: groupCreated.name, token: groupCreated.token })" />
+            <UButton color="neutral" variant="outline"
+              :icon="createdTokenVisible ? 'i-heroicons-eye-slash' : 'i-heroicons-eye'"
+              :label="createdTokenVisible ? 'Hide' : 'Show'"
+              @click="createdTokenVisible = !createdTokenVisible" />
+            <UButton v-if="createdTokenVisible" color="neutral" variant="outline" icon="i-heroicons-clipboard-document"
+              label="Copy token" @click="copyGroupToken(groupCreated.token)" />
+            <UButton v-if="createdTokenVisible && canShare" color="neutral" variant="solid" icon="i-heroicons-share"
+              label="Share" @click="shareGroupInvite({ name: groupCreated.name, token: groupCreated.token })" />
           </div>
           <div class="flex justify-end border-t border-gray-200 pt-3 dark:border-gray-800">
             <UButton color="neutral" variant="solid" label="Done" @click="closeGroupCreatedModal" />
@@ -237,6 +253,7 @@ const isMonthlyGroup = computed(() => selectedCategory.value === "monthly");
 
 const groupCreatedModalOpen = ref(false);
 const groupCreated = ref(null);
+const createdTokenVisible = ref(false);
 const joinToken = ref("");
 const memberships = ref([]);
 const pendingGroups = ref(true);
@@ -245,6 +262,18 @@ const isJoining = ref(false);
 const deleteModalOpen = ref(false);
 const groupPendingDelete = ref(null);
 const isDeletingGroup = ref(false);
+const isRefreshing = ref(false);
+const groupsError = ref("");
+const revealedTokenIds = ref(new Set());
+
+const isTokenRevealed = (id) => revealedTokenIds.value.has(id);
+
+const toggleToken = (id) => {
+  const next = new Set(revealedTokenIds.value);
+  if (next.has(id)) next.delete(id);
+  else next.add(id);
+  revealedTokenIds.value = next;
+};
 
 const openDeleteModal = (group) => {
   groupPendingDelete.value = group;
@@ -357,22 +386,28 @@ const shareGroupInvite = async (group) => {
 };
 
 const refresh = async (omitGroupId = null) => {
+  isRefreshing.value = true;
   if (!memberships.value.length) {
     pendingGroups.value = true;
   }
-  const { data, error } = await listMyMemberships();
-  if (error) {
-    toastError({ title: "Unable to read groups", description: error.message });
+  try {
+    const { data, error } = await listMyMemberships();
+    if (error) {
+      groupsError.value = error.message || "Request failed";
+      toastError({ title: "Unable to read groups", description: groupsError.value });
+      return;
+    }
+    groupsError.value = "";
+    let list = normalizeGroupsPayload(data).map(normalizeGroupRow);
+    if (omitGroupId) {
+      list = list.filter((g) => g && g.id !== omitGroupId);
+    }
+    await enrichOwnerInviteTokens(list);
+    memberships.value = list;
+  } finally {
     pendingGroups.value = false;
-    return;
+    isRefreshing.value = false;
   }
-  let list = normalizeGroupsPayload(data).map(normalizeGroupRow);
-  if (omitGroupId) {
-    list = list.filter((g) => g && g.id !== omitGroupId);
-  }
-  await enrichOwnerInviteTokens(list);
-  memberships.value = list;
-  pendingGroups.value = false;
 };
 
 const closeGroupCreatedModal = () => {
@@ -382,6 +417,7 @@ const closeGroupCreatedModal = () => {
 watch(groupCreatedModalOpen, (open) => {
   if (!open) {
     groupCreated.value = null;
+    createdTokenVisible.value = false;
   }
 });
 

@@ -33,7 +33,6 @@ const { url: avatarUrl } = useAvatarUrl()
 
 const uploading = ref(false)
 const fileInput = ref(null) // Reference to an input with ref="fileInput" attribute
-console.log(user.value)
 
 const saveAvatar = async () => {
     // 1. Get the uploaded file
@@ -48,7 +47,6 @@ const saveAvatar = async () => {
     }
     const fileExt = file.name.split('.').pop()
     const fileName = `${Math.random()}.${fileExt}`
-    console.log(fileName)
 
     try {
         uploading.value = true
@@ -69,7 +67,6 @@ const saveAvatar = async () => {
         })
         if (updateError) throw updateError
         // 4. (OPTIONALLY) remove the old avatar file
-        console.log(currentAvatarUrl)
         if (currentAvatarUrl) {
             const { error: deleteError } = await supabase.storage.from('avatars').remove([currentAvatarUrl])
             if (deleteError) throw deleteError

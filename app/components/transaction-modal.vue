@@ -520,6 +520,13 @@ function confirmSplitPicker() {
   splitPickerOpen.value = false;
 }
 
+/** Store the picked calendar day at noon UTC so it stays on that day in India. */
+function createdAtNoonUtc(created) {
+  if (!created) return null;
+  const day = String(created).split("T")[0];
+  return `${day}T12:00:00.000Z`;
+}
+
 /** Date-only field as local calendar day (avoids UTC shifting the day). */
 function localDateFromInput(created) {
   if (!created) return new Date();
@@ -601,9 +608,7 @@ const save = async () => {
         isLoading.value = false;
         return;
       }
-      const created = state.value.created_at
-        ? `${String(state.value.created_at).split("T")[0]}T12:00:00.000Z`
-        : null;
+      const created = createdAtNoonUtc(state.value.created_at);
       const txDate = localDateFromInput(state.value.created_at);
       const hasCardCycle =
         props.cardBillingCycleStartDay != null &&
@@ -736,12 +741,24 @@ const save = async () => {
       if (!props.transaction && state.value.creditLineKind === "reserve") {
         try {
           await mirrorReserveToMonthlyExpense(supabase, state.value.amount, created, state.value.description);
-        } catch (mirrorError) {
-          console.error("Failed to mirror reserve:", mirrorError);
+        } catch {
+          toastWarning({
+            title: "Reserve saved",
+            description:
+              "The copy on your monthly group did not save. Add that expense there if you still want it.",
+          });
+          isOpen.value = false;
+          emit("saved", state.value);
+          return;
         }
       }
     } else {
-      const base = { ...state.value, id: props.transaction?.id, group_id: groupIdForSave };
+      const base = {
+        ...state.value,
+        id: props.transaction?.id,
+        group_id: groupIdForSave,
+        created_at: createdAtNoonUtc(state.value.created_at),
+      };
       const { error } = await supabase.from("transactions").upsert(base);
       if (error) throw error;
     }

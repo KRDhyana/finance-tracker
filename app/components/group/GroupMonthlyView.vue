@@ -27,14 +27,26 @@
             </USelectMenu>
           </UFormField>
         </div>
-        <UButton
-          icon="i-heroicons-funnel"
-          color="neutral"
-          variant="outline"
-          aria-label="Filter"
-          class="shrink-0 rounded-full"
-          @click="isFilterModalOpen = true"
-        />
+        <div class="flex items-center gap-2">
+          <UButton
+            icon="i-heroicons-arrow-path"
+            color="neutral"
+            variant="ghost"
+            aria-label="Refresh"
+            class="shrink-0"
+            :loading="pendingCurrent"
+            @click="refreshData"
+          />
+          <GroupSearchBar v-model="search" />
+          <UButton
+            icon="i-heroicons-funnel"
+            color="neutral"
+            variant="outline"
+            aria-label="Filter"
+            class="shrink-0 rounded-full"
+            @click="isFilterModalOpen = true"
+          />
+        </div>
       </div>
     </div>
 
@@ -116,7 +128,7 @@
       v-else-if="!pending"
       class="text-sm text-gray-500 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6"
     >
-      No transactions in this period for this filter.
+      No transactions match this search.
     </p>
     <div v-else>
       <USkeleton v-for="i in 4" :key="i" class="h-12 w-full mb-2" />
@@ -168,6 +180,8 @@ import {
   filterTransactionsByUserId,
   summarizeTransactions,
 } from "~/utils/transactions";
+
+const { state: search, apply: applySearch } = useGroupSearch();
 
 const props = defineProps({
   groupId: { type: String, required: true },
@@ -383,7 +397,7 @@ const {
 
 
 
-const pending = computed(() => pendingCurrent.value);
+const pending = computed(() => pendingCurrent.value && currentAll.value == null);
 
 const refreshData = () => {
   refreshC();
@@ -395,7 +409,7 @@ const currentFiltered = computed(() => {
   if (selectedDateId.value !== "ALL") {
     list = list.filter((t) => t.created_at?.startsWith(selectedDateId.value));
   }
-  return list;
+  return applySearch(list, memberNameByUserId.value);
 });
 
 

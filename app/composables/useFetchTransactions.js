@@ -24,7 +24,7 @@ export const useFetchTransactions = async (period, options = {}) => {
     data: transactions,
     pending,
     refresh: refreshTransactions,
-  } = await useAsyncData(
+  } = await useCachedAsyncData(
     asyncKey,
     async () => {
       const p = unref(period);
@@ -50,14 +50,11 @@ export const useFetchTransactions = async (period, options = {}) => {
       }
 
       const { data, error } = await query;
-      if (error) {
-        console.error(error);
-        return [];
-      }
+      if (error) throw error;
 
       return data ?? [];
     },
-    { watch: [asyncKey] },
+    { watch: [asyncKey], ttl: 5 * 60 * 1000 },
   );
 
   const income = computed(() =>

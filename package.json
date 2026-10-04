@@ -6,11 +6,22 @@
     "build": "nuxt build",
     "dev": "nuxt dev",
     "generate": "nuxt generate",
+    "generate:mobile": "cross-env NUXT_APP_BASE_URL=./ NUXT_NATIVE_BUILD=true nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "seed": "node .course/seed.mjs"
+    "seed": "node .course/seed.mjs",
+    "cap:sync": "pnpm run generate:mobile && cap sync",
+    "cap:sync:android": "pnpm run generate:mobile && cap sync android",
+    "cap:android": "cap open android",
+    "build:android:debug": "powershell -ExecutionPolicy Bypass -File scripts/build-android-debug.ps1"
   },
   "dependencies": {
+    "@capacitor/android": "^7.4.2",
+    "@capacitor/app": "^7.0.2",
+    "@capacitor/core": "^7.4.2",
+    "@capacitor/push-notifications": "^7.0.2",
+    "@capacitor/splash-screen": "^7.0.2",
+    "@capacitor/status-bar": "^7.0.2",
     "@nuxt/ui": "^4.4.0",
     "@nuxtjs/supabase": "^2.0.4",
     "@supabase/supabase-js": "^2.97.0",
@@ -24,7 +35,9 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@capacitor/cli": "^7.4.2",
     "@faker-js/faker": "^10.3.0",
-    "@vite-pwa/nuxt": "^1.1.1"
+    "@vite-pwa/nuxt": "^1.1.1",
+    "cross-env": "^7.0.3"
   }
 }

@@ -22,3 +22,11 @@ logs
 .env
 .env.*
 !.env.example
+
+# Capacitor / Android local build artifacts
+android/.gradle
+android/app/build
+android/build
+android/local.properties
+*.apk
+*.aab

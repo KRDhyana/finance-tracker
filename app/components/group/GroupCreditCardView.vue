@@ -20,8 +20,13 @@
             </USelectMenu>
           </UFormField>
         </div>
-        <UButton icon="i-heroicons-funnel" color="neutral" variant="outline" aria-label="Filter"
-          class="shrink-0 rounded-full" @click="isFilterModalOpen = true" />
+        <div class="flex items-center gap-2">
+          <UButton icon="i-heroicons-arrow-path" color="neutral" variant="ghost" aria-label="Refresh"
+            class="shrink-0" :loading="pCur || cardsPending" @click="refreshData" />
+          <GroupSearchBar v-model="search" />
+          <UButton icon="i-heroicons-funnel" color="neutral" variant="outline" aria-label="Filter"
+            class="shrink-0 rounded-full" @click="isFilterModalOpen = true" />
+        </div>
       </div>
     </div>
 
@@ -121,7 +126,7 @@
     </section>
     <p v-else-if="hasCard && !txLoading"
       class="text-sm text-gray-500 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6">
-      No lines in this statement. Pick another period or add a line.
+      No lines match this search.
     </p>
     <div v-else-if="txLoading" class="space-y-2">
       <USkeleton v-for="i in 3" :key="i" class="h-12 w-full" />
@@ -186,6 +191,8 @@ import {
   groupTransactionsByDate,
   filterTransactionsByUserId,
 } from "~/utils/transactions";
+
+const { state: search, apply: applySearch } = useGroupSearch();
 
 const props = defineProps({
   groupId: { type: String, required: true },
@@ -320,21 +327,18 @@ watch(memberFilterUserId, (val) => {
 });
 
 const { data: cardRows, pending: cardsPending, refresh: refreshCards } =
-  await useAsyncData(
+  await useCachedAsyncData(
     () => `credit-cards-${props.groupId}`,
     async () => {
       if (!import.meta.client) return [];
       const { data, error } = await supabase.from("credit_cards").select("*");
-      if (error) {
-        console.error(error);
-        return [];
-      }
+      if (error) throw error;
       return data ?? [];
     },
-    { watch: () => [props.groupId] },
+    { watch: () => [props.groupId], ttl: 10 * 60 * 1000 },
   );
 
-const { data: rpcCycles, refresh: refreshCycles } = await useAsyncData(
+const { data: rpcCycles, refresh: refreshCycles } = await useCachedAsyncData(
   () => `group-cycles-rpc-${props.groupId}-${effectiveCardId.value ?? 'none'}`,
   async () => {
     if (!import.meta.client) return [];
@@ -343,13 +347,10 @@ const { data: rpcCycles, refresh: refreshCycles } = await useAsyncData(
       p_group_id: props.groupId,
       p_card_id: effectiveCardId.value
     });
-    if (error) {
-      console.error(error);
-      return [];
-    }
+    if (error) throw error;
     return (data ?? []).map(x => x.billing_cycle_key);
   },
-  { watch: [() => props.groupId, effectiveCardId] }
+  { watch: [() => props.groupId, effectiveCardId], ttl: 10 * 60 * 1000 },
 );
 
 const allCycleMenuItems = computed(() => {
@@ -431,7 +432,7 @@ const currentTxKey = computed(() => {
   return `cc-cur:${props.groupId}:${selectedCardId.value}:${selectedCycleKey.value}`;
 });
 
-const { data: currentList, pending: pCur, refresh: rCur } = await useAsyncData(
+const { data: currentList, pending: pCur, refresh: rCur } = await useCachedAsyncData(
   currentTxKey,
   async () => {
     if (!import.meta.client) return [];
@@ -445,16 +446,13 @@ const { data: currentList, pending: pCur, refresh: rCur } = await useAsyncData(
       .eq("credit_card_id", selectedCardId.value)
       .eq("billing_cycle_key", selectedCycleKey.value)
       .order("created_at", { ascending: false });
-    if (error) {
-      console.error(error);
-      return [];
-    }
+    if (error) throw error;
     return data ?? [];
   },
-  { watch: [currentTxKey] },
+  { watch: [currentTxKey], ttl: 5 * 60 * 1000 },
 );
 
-const { data: reservationsList, refresh: rRes } = await useAsyncData(
+const { data: reservationsList, refresh: rRes } = await useCachedAsyncData(
   () => `cc-res:${currentTxKey.value}`,
   async () => {
     if (!import.meta.client) return [];
@@ -468,16 +466,13 @@ const { data: reservationsList, refresh: rRes } = await useAsyncData(
       .eq('credit_card_id', selectedCardId.value)
       .eq('billing_cycle_key', selectedCycleKey.value);
     
-    if (error) {
-      console.error(error);
-      return [];
-    }
+    if (error) throw error;
     return data ?? [];
   },
-  { watch: [currentTxKey] }
+  { watch: [currentTxKey], ttl: 5 * 60 * 1000 },
 );
 
-const { data: batchesList, refresh: rBatches } = await useAsyncData(
+const { data: batchesList, refresh: rBatches } = await useCachedAsyncData(
   () => `cc-batches:${currentTxKey.value}`,
   async () => {
     if (!import.meta.client) return [];
@@ -491,13 +486,10 @@ const { data: batchesList, refresh: rBatches } = await useAsyncData(
       .eq('credit_card_id', selectedCardId.value)
       .eq('billing_cycle_key', selectedCycleKey.value);
     
-    if (error) {
-      console.error(error);
-      return [];
-    }
+    if (error) throw error;
     return data ?? [];
   },
-  { watch: [currentTxKey] }
+  { watch: [currentTxKey], ttl: 5 * 60 * 1000 },
 );
 
 const reservedAmountByTxId = computed(() => {
@@ -508,7 +500,7 @@ const reservedAmountByTxId = computed(() => {
   return map;
 });
 
-const txLoading = computed(() => pCur.value);
+const txLoading = computed(() => pCur.value && currentList.value == null);
 
 const refreshData = () => {
   rCur();
@@ -798,9 +790,12 @@ const nonOwnerTrendTitles = computed(() => {
 });
 
 const filteredList = computed(() =>
-  filterTransactionsByUserId(
-    currentFilteredByDate.value,
-    memberFilterUserId.value,
+  applySearch(
+    filterTransactionsByUserId(
+      currentFilteredByDate.value,
+      memberFilterUserId.value,
+    ),
+    memberNameByUserId.value,
   ),
 );
 const byDate = computed(() => groupTransactionsByDate(filteredList.value));

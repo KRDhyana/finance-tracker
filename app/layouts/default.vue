@@ -1,25 +1,8 @@
 <template>
-  <div class="container mx-auto max-w-4xl px-5">
+  <div class="app-shell container mx-auto max-w-4xl px-5">
     <AppHeader />
     <main class="my-10">
       <slot />
     </main>
   </div>
 </template>
-
-<script setup>
-// Link to Google Fonts
-useHead({
-  link: [
-    {
-      rel: 'preconnect',
-      href: 'https://fonts.googleapis.com'
-    },
-    {
-      rel: 'stylesheet',
-      href: 'https://fonts.googleapis.com/css2?family=Inter&display=swap',
-      crossorigin: ''
-    }
-  ]
-})
-</script>

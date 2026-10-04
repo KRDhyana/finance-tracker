@@ -8,11 +8,11 @@
     <UButton color="primary" variant="solid" label="Cards" @click="goToCards" />
   </div>
   <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 sm:gap-16 mb-10">
-    <Trend color="green" title="Income" :amount="incomeTotal" :last-amount="previousIncomeTotal" :loading="pending" />
-    <Trend color="red" title="Expense" :amount="expenseTotal" :last-amount="previousExpenseTotal" :loading="pending" />
+    <Trend color="green" title="Income" :amount="incomeTotal" :last-amount="previousIncomeTotal" :loading="summaryLoading" />
+    <Trend color="red" title="Expense" :amount="expenseTotal" :last-amount="previousExpenseTotal" :loading="summaryLoading" />
     <Trend color="green" title="Investments" :amount="investmentTotal" :last-amount="previousInvestmentTotal"
-      :loading="pending" />
-    <Trend color="red" title="Saving" :amount="savingTotal" :last-amount="previousSavingTotal" :loading="pending" />
+      :loading="summaryLoading" />
+    <Trend color="red" title="Saving" :amount="savingTotal" :last-amount="previousSavingTotal" :loading="summaryLoading" />
   </section>
 
   <section class="flex justify-between mb-10">
@@ -23,7 +23,9 @@
         period
       </div>
     </div>
-    <div>
+    <div class="flex items-center gap-2">
+      <UButton color="neutral" variant="ghost" icon="i-heroicons-arrow-path" aria-label="Refresh"
+        :loading="pending || previousPending" @click="refreshData" />
       <TransactionModal @saved="refreshData" v-model:isOpen="isOpen" />
       <UButton color="neutral" icon="i-heroicons-plus-circle-solid" variant="outline" label="Add"
         @click="isOpen = true">
@@ -32,7 +34,7 @@
     </div>
   </section>
 
-  <section v-if="!pending">
+  <section v-if="!summaryLoading">
     <div v-for="(transactionsOnDay, date) in byDate" :key="date">
       <DailyTransactionSummary :date="date" :transactions="transactionsOnDay" :key="date" />
       <Transaction v-for="transaction in transactionsOnDay" :key="transaction.id" :transaction="transaction"
@@ -71,6 +73,7 @@ const goToCards = () => {
 
 const {
   transactions: {
+    all,
     grouped: { byDate },
     incomeCount,
     expenseCount,
@@ -85,13 +88,21 @@ const {
 
 const {
   transactions: {
+    all: previousAll,
     incomeTotal: previousIncomeTotal,
     expenseTotal: previousExpenseTotal,
     investmentTotal: previousInvestmentTotal,
     savingTotal: previousSavingTotal,
   },
+  pending: previousPending,
   refreshTransactions: previousRefreshTransactions,
 } = await useFetchTransactions(previousPeriod, { scope: "mine" });
+
+const summaryLoading = computed(
+  () =>
+    (pending.value && all.value == null) ||
+    (previousPending.value && previousAll.value == null),
+);
 
 watch(selectedView, () => {
   refreshData();

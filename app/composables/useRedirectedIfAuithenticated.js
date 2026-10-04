@@ -4,10 +4,7 @@ export const useRedirectedIfAuthenticated = (url = "/") => {
   watch(
     user,
     (user) => {
-      if (user) {
-        console.log(user);
-        return navigateTo(url);
-      }
+      if (user) return navigateTo(url);
     },
     { immediate: true },
   );

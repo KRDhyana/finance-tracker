@@ -48,28 +48,28 @@
         title="Income"
         :amount="currentSummary.incomeTotal"
         :last-amount="previousSummary.incomeTotal"
-        :loading="pending"
+        :loading="listLoading"
       />
       <Trend
         color="red"
         title="Expense"
         :amount="currentSummary.expenseTotal"
         :last-amount="previousSummary.expenseTotal"
-        :loading="pending"
+        :loading="listLoading"
       />
       <Trend
         color="green"
         title="Investments"
         :amount="currentSummary.investmentTotal"
         :last-amount="previousSummary.investmentTotal"
-        :loading="pending"
+        :loading="listLoading"
       />
       <Trend
         color="red"
         title="Saving"
         :amount="currentSummary.savingTotal"
         :last-amount="previousSummary.savingTotal"
-        :loading="pending"
+        :loading="listLoading"
       />
     </section>
 
@@ -81,7 +81,16 @@
           {{ currentSummary.expenseCount }} expenses this period
         </div>
       </div>
-      <div>
+      <div class="flex items-center gap-2">
+        <UButton
+          color="neutral"
+          variant="ghost"
+          icon="i-heroicons-arrow-path"
+          aria-label="Refresh"
+          :loading="pending"
+          @click="refreshData"
+        />
+        <GroupSearchBar v-model="search" />
         <TransactionModal
           :group-id="groupId"
           :group-members="members"
@@ -98,7 +107,7 @@
       </div>
     </section>
 
-    <section v-if="!pending">
+    <section v-if="!listLoading && currentFiltered.length">
       <div v-for="(transactionsOnDay, date) in byDateFiltered" :key="date">
         <DailyTransactionSummary
           :date="date"
@@ -117,6 +126,12 @@
         />
       </div>
     </section>
+    <p
+      v-else-if="!listLoading"
+      class="text-sm text-gray-500 border border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6"
+    >
+      No transactions match this search.
+    </p>
     <section v-else>
       <USkeleton class="h-10 w-full mb-2" v-for="i in 4" :key="i" />
     </section>
@@ -130,6 +145,8 @@ import {
   groupTransactionsByDate,
   summarizeTransactions,
 } from "~/utils/transactions";
+
+const { state: search, apply: applySearch } = useGroupSearch();
 
 const props = defineProps({
   groupId: { type: String, required: true },
@@ -153,7 +170,7 @@ const { currentPeriod, previousPeriod } = useSelectedTimePeriod(selectedView);
 const {
   transactions: { all: currentAll },
   pending,
-  refresh: refreshCurrent,
+  refreshTransactions: refreshCurrent,
 } = await useFetchTransactions(currentPeriod, {
   scope: "group",
   groupId: computed(() => props.groupId),
@@ -161,11 +178,18 @@ const {
 
 const {
   transactions: { all: previousAll },
-  refresh: refreshPrevious,
+  pending: previousPending,
+  refreshTransactions: refreshPrevious,
 } = await useFetchTransactions(previousPeriod, {
   scope: "group",
   groupId: computed(() => props.groupId),
 });
+
+const listLoading = computed(
+  () =>
+    (pending.value && currentAll.value == null) ||
+    (previousPending.value && previousAll.value == null),
+);
 
 const refreshData = () => {
   refreshCurrent();
@@ -210,16 +234,22 @@ const memberNameByUserId = computed(() => {
 });
 
 const currentFiltered = computed(() =>
-  filterTransactionsByUserId(
-    currentAll.value,
-    memberFilterUserId.value,
+  applySearch(
+    filterTransactionsByUserId(
+      currentAll.value,
+      memberFilterUserId.value,
+    ),
+    memberNameByUserId.value,
   ),
 );
 
 const previousFiltered = computed(() =>
-  filterTransactionsByUserId(
-    previousAll.value,
-    memberFilterUserId.value,
+  applySearch(
+    filterTransactionsByUserId(
+      previousAll.value,
+      memberFilterUserId.value,
+    ),
+    memberNameByUserId.value,
   ),
 );
 

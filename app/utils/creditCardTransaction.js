@@ -112,11 +112,10 @@ export async function fetchGrossSavingsInCreditCardScope(supabase, scope) {
 }
 
 export async function mirrorReserveToMonthlyExpense(supabase, amount, created_at, description) {
-  console.log("Mirroring reserve to monthly expense:", amount, created_at, description);
   if (!amount) return;
   const { data: groups, error } = await supabase.rpc("get_user_groups");
-  console.log("Groups:", groups);
-  if (error || !groups) return;
+  if (error) throw error;
+  if (!groups) return;
   const monthlyGroup = groups.find(g => (g.type === "monthly"));
   if (!monthlyGroup) return;
 
@@ -128,7 +127,8 @@ export async function mirrorReserveToMonthlyExpense(supabase, amount, created_at
     description: description ? `[Auto] ${description}` : "[Auto] Reserve debit",
     created_at: created_at,
   };
-  
-  await supabase.from("transactions").insert(payload);
+
+  const { error: insertError } = await supabase.from("transactions").insert(payload);
+  if (insertError) throw insertError;
 }
 
