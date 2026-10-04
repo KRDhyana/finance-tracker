@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-10">
     <div class="flex justify-between items-center">
-      <UButton to="/" icon="i-heroicons-arrow-left" color="neutral" variant="outline" aria-label="Back to Summary" />
+      <UButton to="/" icon="i-heroicons-arrow-left" color="neutral" variant="outline" aria-label="Back to Dashboard" />
       <section class="flex items-center gap-2">
         <UButton icon="i-heroicons-plus" label="Create group" color="neutral" variant="solid"
           @click="createGroupModalOpen = true" />

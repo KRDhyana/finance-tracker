@@ -4,7 +4,7 @@ import { groupTransactionsByDate } from "~/utils/transactions";
 /**
  * @param {import('vue').Ref | import('vue').ComputedRef} period
  * @param {object} [options]
- * @param {'mine' | 'group'} [options.scope='mine']
+ * @param {'mine' | 'group' | 'groups'} [options.scope='mine']
  * @param {import('vue').Ref<string>|string|null} [options.groupId]
  */
 export const useFetchTransactions = async (period, options = {}) => {
@@ -34,7 +34,9 @@ export const useFetchTransactions = async (period, options = {}) => {
       const select =
         scope === "group"
           ? "*, expense_groups(name), profiles(full_name, avatar_url)"
-          : "*, expense_groups(name)";
+          : scope === "groups"
+            ? "id, amount, type, subtype, group_id, created_at, category, expense_groups(id, name, type)"
+            : "*, expense_groups(name)";
 
       let query = supabase
         .from("transactions")
@@ -45,6 +47,8 @@ export const useFetchTransactions = async (period, options = {}) => {
 
       if (scope === "group") {
         query = query.eq("group_id", gid);
+      } else if (scope === "groups") {
+        query = query.not("group_id", "is", null);
       } else if (scope === "mine") {
         query = query.is("group_id", null);
       }

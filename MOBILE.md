@@ -39,6 +39,21 @@ com.financetracker.app://confirm
 
 Until Firebase is configured, the app works normally; push registration fails silently.
 
+## Versioning
+
+Every APK you install over a previous one must bump **both**:
+
+- `versionCode` in `android/app/build.gradle` — integer, always +1 (`1`, `2`, `3`…)
+- `versionName` — people-facing label using [semver](https://semver.org/) (`MAJOR.MINOR.PATCH`)
+
+| Kind | When | `versionName` example |
+| --- | --- | --- |
+| Patch | Bug fix | `1.1.0` → `1.1.1` |
+| Minor | New feature | `1.1.0` → `1.2.0` |
+| Major | Breaking change | `1.2.0` → `2.0.0` |
+
+Current app: **1.1.1** (`versionCode` 3). Debug APKs are for emulators. Other people should get a signed **release** build, ideally from Play Store, so Android does not treat the file as an unknown app.
+
 ## Build debug APK
 
 ```bash
