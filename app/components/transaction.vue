@@ -1,6 +1,6 @@
 <template>
   <div
-    class="flex gap-3 border-b border-gray-200 py-4 dark:border-gray-800 sm:items-center sm:gap-4"
+    class="flex gap-3 border-b border-gray-200 py-2 dark:border-gray-800 sm:items-center sm:gap-4"
   >
     <div
       v-if="showSpendPickCheckbox"
@@ -23,7 +23,7 @@
       <div class="flex min-w-0 items-start gap-2 sm:flex-1 sm:items-center">
         <UIcon
           :name="icon"
-          :class="[iconColor, 'mt-0.5 size-5 shrink-0 sm:mt-0']"
+          :class="[iconColor, 'mt-0.5 size-4.5 shrink-0 sm:mt-0']"
         />
         <div class="min-w-0 flex-1 wrap-break-word leading-snug">
           {{ displayDescription }}
@@ -70,7 +70,7 @@
             color="neutral"
             variant="ghost"
             size="md"
-            class="min-h-11 min-w-11 sm:min-h-0 sm:min-w-0"
+            class="min-h-8 min-w-11 sm:min-h-0 sm:min-w-0"
             :loading="isLoading"
           />
           <TransactionModal

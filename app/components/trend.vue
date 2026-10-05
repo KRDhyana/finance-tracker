@@ -3,7 +3,7 @@
         <div class="font-bold" :class="[color]">
             {{ title }}
         </div>
-        <div class="text-2xl font-extrabold text-black dark:text-white mb-2">
+        <div class="text-2xl font-extrabold text-black dark:text-white">
             <USkeleton class="h-8 w-full" v-if="loading" />
             <span v-else>{{ currency }}</span>
         </div>

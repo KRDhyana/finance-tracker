@@ -1,15 +1,17 @@
 <template>
-    <div class="grid grid-cols-2 py-4 border-b border-gray-200 dark:border-gray-800 text-gray-500 dark:text-gray-400 font-bold">
+    <div class="grid grid-cols-2 py-1.5 pl-2 pr-0 dark:py-3 border-b border-gray-500 dark:border-gray-700 text-gray-600 dark:text-gray-400 shadow rounded font-bold">
         <div class="flex items-center justify-between">
-            {{ date }}
+            {{ formattedDate }}
         </div>
-        <div class="flex items-center justify-end mr-10">
+        <div class="flex items-center justify-end mr-6 md:mr-10" :class="sum >= 0 ? 'text-green-500 dark:text-green-400' : 'text-red-500 dark:text-red-400'">
             {{ currency }}
         </div>
     </div>
 </template>
 
 <script setup>
+import { computed } from 'vue';
+import { format } from 'date-fns';
 import { isCcReserve, isCcPaymentToOwner } from "~/utils/creditCardTransaction";
 
 const props = defineProps({
@@ -26,6 +28,17 @@ const props = defineProps({
     type: Boolean,
     default: false,
   },
+});
+
+const formattedDate = computed(() => {
+  if (!props.date) return "";
+  const parts = props.date.split("-");
+  if (parts.length === 3) {
+    //const date_wise = `${parts[2]}-${parts[1]}-${parts[0].slice(2)}`;
+    const d = new Date(parts[0], parts[1] - 1, parts[2]);
+    return format(d, 'MMM do, yyyy');
+  }
+  return props.date;
 });
 
 const sum = computed(() => {

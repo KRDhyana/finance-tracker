@@ -316,11 +316,13 @@ const formSchema = computed(() => {
 });
 
 const getEmptyState = () => {
+  const today = new Date().toLocaleDateString("en-CA");
+
   if (props.creditCard) {
     return {
       creditLineKind: "spend",
       amount: 0,
-      created_at: undefined,
+      created_at: today,
       category: undefined,
       description: undefined,
     };
@@ -328,7 +330,7 @@ const getEmptyState = () => {
   return {
     type: undefined,
     amount: 0,
-    created_at: undefined,
+    created_at: today,
     category: undefined,
     description: undefined,
   };
